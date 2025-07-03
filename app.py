@@ -34,7 +34,7 @@ st.title("⚽ Fantasy Fútbol - Panel de Amigos")
 # --- Tabs ---
 tabs = st.tabs([
     "📅 Cargar puntos", "✏️ Editar puntos", "📊 Tabla", "📈 Evolución",
-    "🏆 Historial", "➕ Agregar campeón", "📋 Editar historial", "🏋️ Podios", "👥 Participantes"
+    "🏆 Historial", "➕ Agregar campeón", "📃 Editar historial", "🏋️ Podios", "👥 Participantes"
 ])
 
 # --- 📅 Cargar puntos ---
@@ -126,12 +126,11 @@ with tabs[5]:
         elif clave_ingresada:
             st.error("Clave incorrecta")
 
-# --- 📋 Editar historial ---
+# --- 📃 Editar historial ---
 with tabs[6]:
-    st.header("📋 Editar datos del Historial")
-    if df_historial.empty:
-        st.info("No hay datos en el historial para editar.")
-    else:
+    st.header("📃 Editar datos del Historial")
+    columnas_necesarias = {"Temporada", "Torneo", "Ganador", "Puntos", "Posicion"}
+    if columnas_necesarias.issubset(df_historial.columns) and not df_historial.empty:
         fila_idx = st.selectbox("Selecciona el torneo a editar", df_historial.index)
         fila = df_historial.loc[fila_idx]
         with st.form("form_editar_historial"):
@@ -145,6 +144,8 @@ with tabs[6]:
                 df_historial.loc[fila_idx] = [temporada, torneo, ganador, puntos, posicion]
                 df_historial.to_csv(HISTORIAL_PATH, index=False)
                 st.success("Registro actualizado correctamente.")
+    else:
+        st.warning("El historial está vacío o no tiene las columnas necesarias (Temporada, Torneo, Ganador, Puntos, Posicion).")
 
 # --- 🏋️ Podios ---
 with tabs[7]:
@@ -172,3 +173,4 @@ with tabs[8]:
             df_participantes.to_csv(PARTICIPANTES_PATH, index=False)
             st.success(f"Participante {nombre} agregado con éxito")
     st.dataframe(df_participantes.sort_values("Nombre"))
+
