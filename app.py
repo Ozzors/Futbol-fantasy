@@ -27,7 +27,14 @@ df_historial = pd.read_csv(HISTORIAL_PATH) if os.path.exists(HISTORIAL_PATH) els
 st.title("⚽ Fantasy Fútbol - Panel de Amigos")
 
 # --- Tabs principales ---
-tabs = st.tabs(["📥 Cargar puntos", "📊 Tabla", "📈 Evolución", "🏆 Historial", "➕ Agregar campeón"])
+tabs = st.tabs([
+    "📥 Cargar puntos",
+    "✏️ Editar puntos",
+    "📊 Tabla",
+    "📈 Evolución",
+    "🏆 Historial",
+    "➕ Agregar campeón"
+])
 
 # --- Tab 1: Cargar puntos ---
 with tabs[0]:
@@ -44,8 +51,33 @@ with tabs[0]:
             df_puntos.to_csv(PUNTOS_PATH, index=False)
             st.success(f"Puntos guardados para {jugador} en jornada {jornada}")
 
-# --- Tab 2: Tabla de posiciones ---
+# --- Tab 2: Editar puntos por jugador y jornada ---
 with tabs[1]:
+    st.header("✏️ Editar Puntos Existentes")
+
+    if df_puntos.empty:
+        st.info("No hay puntos cargados todavía.")
+    else:
+        jugadores = sorted(df_puntos["Jugador"].unique())
+        jugador_sel = st.selectbox("Selecciona jugador", jugadores)
+
+        jornadas = sorted(df_puntos[df_puntos["Jugador"] == jugador_sel]["Jornada"].unique())
+        jornada_sel = st.selectbox("Selecciona jornada", jornadas)
+
+        current_points = df_puntos[(df_puntos["Jugador"] == jugador_sel) & (df_puntos["Jornada"] == jornada_sel)]["Puntos"].values[0]
+        st.write(f"Puntos actuales: **{current_points}**")
+
+        nuevos_puntos = st.number_input("Nuevos puntos", value=int(current_points), step=1)
+        if st.button("Actualizar puntos"):
+            df_puntos.loc[
+                (df_puntos["Jugador"] == jugador_sel) & (df_puntos["Jornada"] == jornada_sel),
+                "Puntos"
+            ] = nuevos_puntos
+            df_puntos.to_csv(PUNTOS_PATH, index=False)
+            st.success(f"Puntos actualizados para {jugador_sel} en jornada {jornada_sel}")
+
+# --- Tab 3: Tabla de posiciones ---
+with tabs[2]:
     st.header("📊 Tabla de Posiciones")
     if not df_puntos.empty:
         tabla = df_puntos.groupby("Jugador")["Puntos"].sum().sort_values(ascending=False).reset_index()
@@ -54,8 +86,8 @@ with tabs[1]:
     else:
         st.info("Todavía no hay puntos cargados.")
 
-# --- Tab 3: Evolución por jornada ---
-with tabs[2]:
+# --- Tab 4: Evolución por jornada ---
+with tabs[3]:
     st.header("📈 Evolución por Jornada")
     if not df_puntos.empty:
         df_evo = df_puntos.pivot_table(index="Jornada", columns="Jugador", values="Puntos", aggfunc="sum").fillna(0)
@@ -73,16 +105,16 @@ with tabs[2]:
     else:
         st.info("Aún no hay datos suficientes para mostrar la gráfica.")
 
-# --- Tab 4: Historial de campeones ---
-with tabs[3]:
+# --- Tab 5: Historial de campeones ---
+with tabs[4]:
     st.header("🏆 Historial de Ganadores")
     if not df_historial.empty:
         st.dataframe(df_historial.sort_values(["Temporada", "Posición"]))
     else:
         st.info("No hay historial aún.")
 
-# --- Tab 5: Agregar campeón con clave ---
-with tabs[4]:
+# --- Tab 6: Agregar campeón con clave ---
+with tabs[5]:
     st.header("➕ Agregar Torneo al Historial")
     clave_correcta = "Cholonogana"
 
