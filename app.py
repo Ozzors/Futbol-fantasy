@@ -21,7 +21,7 @@ if not os.path.exists(PUNTOS_PATH):
 
 # --- Cargar datos existentes ---
 df_puntos = pd.read_csv(PUNTOS_PATH)
-df_historial = pd.read_csv(HISTORIAL_PATH) if os.path.exists(HISTORIAL_PATH) else pd.DataFrame(columns=["Temporada", "Ganador", "Puntos"])
+df_historial = pd.read_csv(HISTORIAL_PATH) if os.path.exists(HISTORIAL_PATH) else pd.DataFrame(columns=["Temporada", "Ganador", "Puntos", "Posición"])
 
 # --- Título ---
 st.title("⚽ Fantasy Fútbol - Panel de Amigos")
@@ -77,7 +77,7 @@ with tabs[2]:
 with tabs[3]:
     st.header("🏆 Historial de Ganadores")
     if not df_historial.empty:
-        st.table(df_historial)
+        st.dataframe(df_historial.sort_values(["Temporada", "Posición"]))
     else:
         st.info("No hay historial aún.")
 
@@ -92,19 +92,21 @@ with tabs[4]:
         if clave_ingresada == clave_correcta:
             with st.form("form_historial"):
                 temporada = st.text_input("Temporada (ej. 2024)")
-                ganador = st.text_input("Nombre del ganador")
+                ganador = st.text_input("Nombre del jugador")
                 puntos = st.number_input("Puntos obtenidos", step=1)
+                posicion = st.number_input("Posición final (ej. 1 para campeón)", step=1, min_value=1)
                 guardar = st.form_submit_button("Guardar")
 
                 if guardar and temporada and ganador:
                     nueva_fila = pd.DataFrame([{
                         "Temporada": temporada,
                         "Ganador": ganador,
-                        "Puntos": puntos
+                        "Puntos": puntos,
+                        "Posición": posicion
                     }])
 
                     df_historial = pd.concat([df_historial, nueva_fila], ignore_index=True)
                     df_historial.to_csv(HISTORIAL_PATH, index=False)
-                    st.success(f"Historial actualizado: {ganador} ganó en {temporada}")
+                    st.success(f"Historial actualizado: {ganador} terminó en posición {posicion} en {temporada}")
         elif clave_ingresada != "":
             st.error("Clave incorrecta")
