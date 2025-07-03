@@ -33,13 +33,13 @@ st.title("⚽ Fantasy Fútbol - Panel de Amigos")
 
 # --- Tabs ---
 tabs = st.tabs([
-    "📅 Cargar puntos", "✏️ Editar puntos", "📊 Tabla", "📈 Evolución",
-    "🏆 Historial", "➕ Agregar campeón", "🏋️ Podios", "👥 Participantes"
+    "📥 Cargar puntos", "✏️ Editar puntos", "📊 Tabla", "📈 Evolución",
+    "🏆 Historial", "➕ Agregar campeón", "🏅 Podios", "👥 Participantes"
 ])
 
-# --- 📅 Cargar puntos ---
+# --- 📥 Cargar puntos ---
 with tabs[0]:
-    st.header("📅 Cargar Puntos de Jornada")
+    st.header("📥 Cargar Puntos de Jornada")
     with st.form("form_puntos"):
         jugador = st.selectbox("Selecciona jugador", nombres_participantes)
         jornada = st.number_input("Número de jornada", min_value=1, step=1)
@@ -97,10 +97,11 @@ with tabs[3]:
 # --- 🏆 Historial de campeones ---
 with tabs[4]:
     st.header("🏆 Historial de Ganadores")
-    if not df_historial.empty:
+    columnas_necesarias = {"Temporada", "Torneo", "Ganador", "Puntos", "Posicion"}
+    if columnas_necesarias.issubset(df_historial.columns):
         st.dataframe(df_historial.sort_values(["Temporada", "Posicion"]))
     else:
-        st.info("No hay historial aún.")
+        st.error("El archivo historial no contiene las columnas necesarias para mostrar el historial correctamente.")
 
 # --- ➕ Agregar campeón ---
 with tabs[5]:
@@ -121,13 +122,13 @@ with tabs[5]:
                                                 "Puntos": puntos, "Posicion": posicion}])
                     df_historial = pd.concat([df_historial, nueva_fila], ignore_index=True)
                     df_historial.to_csv(HISTORIAL_PATH, index=False)
-                    st.success(f"Historial actualizado: {ganador} terminó en posicion {posicion} en {temporada}")
+                    st.success(f"Historial actualizado: {ganador} terminó en posición {posicion} en {temporada}")
         elif clave_ingresada:
             st.error("Clave incorrecta")
 
-# --- 🏋️ Podios ---
+# --- 🏅 Podios ---
 with tabs[6]:
-    st.header("🏋️ Podios Históricos")
+    st.header("🏅 Podios Históricos")
     columnas_necesarias = {"Temporada", "Torneo", "Ganador", "Puntos", "Posicion"}
     if columnas_necesarias.issubset(df_historial.columns):
         top3 = df_historial[df_historial["Posicion"] <= 3].copy()
