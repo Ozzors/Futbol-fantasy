@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import altair as alt
@@ -6,16 +7,20 @@ import os
 # --- Configuración inicial ---
 st.set_page_config(page_title="Fantasy Fútbol", layout="wide")
 
-# --- Cargar datos ---
+# --- Crear carpeta 'data' si no existe ---
+if not os.path.exists("data"):
+    os.makedirs("data")
+
+# --- Rutas de archivos ---
 PUNTOS_PATH = "data/puntos.csv"
 HISTORIAL_PATH = "data/historial.csv"
 
-# Si no existe, crear archivo de puntos
+# --- Crear archivo puntos.csv si no existe ---
 if not os.path.exists(PUNTOS_PATH):
     df_vacio = pd.DataFrame(columns=["Jugador", "Jornada", "Puntos"])
     df_vacio.to_csv(PUNTOS_PATH, index=False)
 
-# Cargar puntos
+# --- Cargar datos existentes ---
 df_puntos = pd.read_csv(PUNTOS_PATH)
 
 # --- Título ---
