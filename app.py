@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import altair as alt
@@ -53,7 +52,7 @@ else:
 st.header("📈 Evolución por Jornada")
 if not df_puntos.empty:
     df_evo = df_puntos.pivot_table(index="Jornada", columns="Jugador", values="Puntos", aggfunc="sum").fillna(0)
-    df_evo = df_evo.cumsum()  # Acumulado
+    df_evo = df_evo.cumsum()
     df_evo = df_evo.reset_index().melt(id_vars="Jornada", var_name="Jugador", value_name="Puntos acumulados")
 
     chart = alt.Chart(df_evo).mark_line(point=True).encode(
@@ -72,3 +71,37 @@ if os.path.exists(HISTORIAL_PATH):
     st.table(historial)
 else:
     st.info("No hay historial aún. Puedes cargar uno en 'data/historial.csv'")
+
+# --- Agregar nuevo torneo al historial ---
+st.header("➕ Agregar Torneo al Historial")
+
+# Clave protegida
+clave_correcta = "Cholonogana"
+
+with st.expander("Formulario protegido para agregar historial"):
+    clave_ingresada = st.text_input("Ingresa la clave para editar", type="password")
+
+    if clave_ingresada == clave_correcta:
+        with st.form("form_historial"):
+            temporada = st.text_input("Temporada (ej. 2024)")
+            ganador = st.text_input("Nombre del ganador")
+            puntos = st.number_input("Puntos obtenidos", step=1)
+            guardar = st.form_submit_button("Guardar")
+
+            if guardar and temporada and ganador:
+                nueva_fila = pd.DataFrame([{
+                    "Temporada": temporada,
+                    "Ganador": ganador,
+                    "Puntos": puntos
+                }])
+
+                if os.path.exists(HISTORIAL_PATH):
+                    historial = pd.read_csv(HISTORIAL_PATH)
+                    historial = pd.concat([historial, nueva_fila], ignore_index=True)
+                else:
+                    historial = nueva_fila
+
+                historial.to_csv(HISTORIAL_PATH, index=False)
+                st.success(f"Historial actualizado: {ganador} ganó en {temporada}")
+    elif clave_ingresada != "":
+        st.error("Clave incorrecta")
