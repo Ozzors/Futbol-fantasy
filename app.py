@@ -20,7 +20,7 @@ if not os.path.exists(PUNTOS_PATH):
 if not os.path.exists(HISTORIAL_PATH):
     pd.DataFrame(columns=["Temporada", "Torneo", "Ganador", "Puntos", "Posicion"]).to_csv(HISTORIAL_PATH, index=False)
 if not os.path.exists(PARTICIPANTES_PATH):
-    pd.DataFrame(columns=["Nombre", "Equipo", "Estado"]).to_csv(PARTICIPANTES_PATH, index=False)
+    pd.DataFrame(columns=["Nombre", "Equipo", "Estado", "Favorito"]).to_csv(PARTICIPANTES_PATH, index=False)
 
 # --- Cargar archivos ---
 df_puntos = pd.read_csv(PUNTOS_PATH)
@@ -33,13 +33,13 @@ st.title("⚽ Fantasy Fútbol - Panel de Amigos")
 
 # --- Tabs ---
 tabs = st.tabs([
-    "📥 Cargar puntos", "✏️ Editar puntos", "📊 Tabla", "📈 Evolución",
-    "🏆 Historial", "➕ Agregar campeón", "🏅 Podios", "👥 Participantes"
+    "📅 Cargar puntos", "✏️ Editar puntos", "📊 Tabla", "📈 Evolución",
+    "🏆 Historial", "➕ Agregar campeón", "📋 Editar historial", "🏋️ Podios", "👥 Participantes"
 ])
 
-# --- 📥 Cargar puntos ---
+# --- 📅 Cargar puntos ---
 with tabs[0]:
-    st.header("📥 Cargar Puntos de Jornada")
+    st.header("📅 Cargar Puntos de Jornada")
     with st.form("form_puntos"):
         jugador = st.selectbox("Selecciona jugador", nombres_participantes)
         jornada = st.number_input("Número de jornada", min_value=1, step=1)
@@ -126,9 +126,29 @@ with tabs[5]:
         elif clave_ingresada:
             st.error("Clave incorrecta")
 
-# --- 🏅 Podios ---
+# --- 📋 Editar historial ---
 with tabs[6]:
-    st.header("🏅 Podios Históricos")
+    st.header("📋 Editar datos del Historial")
+    if df_historial.empty:
+        st.info("No hay datos en el historial para editar.")
+    else:
+        fila_idx = st.selectbox("Selecciona el torneo a editar", df_historial.index)
+        fila = df_historial.loc[fila_idx]
+        with st.form("form_editar_historial"):
+            temporada = st.text_input("Temporada", value=fila["Temporada"])
+            torneo = st.text_input("Torneo", value=fila["Torneo"])
+            ganador = st.selectbox("Ganador", nombres_participantes, index=nombres_participantes.index(fila["Ganador"]))
+            puntos = st.number_input("Puntos", value=int(fila["Puntos"]))
+            posicion = st.number_input("Posicion", value=int(fila["Posicion"]), step=1, min_value=1)
+            actualizar = st.form_submit_button("Actualizar historial")
+            if actualizar:
+                df_historial.loc[fila_idx] = [temporada, torneo, ganador, puntos, posicion]
+                df_historial.to_csv(HISTORIAL_PATH, index=False)
+                st.success("Registro actualizado correctamente.")
+
+# --- 🏋️ Podios ---
+with tabs[7]:
+    st.header("🏋️ Podios Históricos")
     columnas_necesarias = {"Temporada", "Torneo", "Ganador", "Puntos", "Posicion"}
     if columnas_necesarias.issubset(df_historial.columns):
         top3 = df_historial[df_historial["Posicion"] <= 3].copy()
@@ -138,15 +158,16 @@ with tabs[6]:
         st.error("El archivo historial no contiene las columnas necesarias ('Temporada', 'Torneo', 'Posicion').")
 
 # --- 👥 Participantes ---
-with tabs[7]:
+with tabs[8]:
     st.header("👥 Participantes")
     with st.form("form_participantes"):
         nombre = st.text_input("Nombre")
         equipo = st.text_input("Nombre del equipo")
+        favorito = st.text_input("Equipo favorito")
         estado = st.selectbox("Estado", ["Activo", "Inactivo"])
         guardar = st.form_submit_button("Agregar participante")
         if guardar and nombre:
-            nuevo = pd.DataFrame([{"Nombre": nombre, "Equipo": equipo, "Estado": estado}])
+            nuevo = pd.DataFrame([{"Nombre": nombre, "Equipo": equipo, "Estado": estado, "Favorito": favorito}])
             df_participantes = pd.concat([df_participantes, nuevo], ignore_index=True)
             df_participantes.to_csv(PARTICIPANTES_PATH, index=False)
             st.success(f"Participante {nombre} agregado con éxito")
