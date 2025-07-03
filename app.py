@@ -172,5 +172,29 @@ with tabs[8]:
             df_participantes = pd.concat([df_participantes, nuevo], ignore_index=True)
             df_participantes.to_csv(PARTICIPANTES_PATH, index=False)
             st.success(f"Participante {nombre} agregado con éxito")
+
     st.dataframe(df_participantes.sort_values("Nombre"))
+
+    st.subheader("🔄 Editar Participante")
+    if not df_participantes.empty:
+        seleccion = st.selectbox("Selecciona participante", df_participantes.index)
+        fila = df_participantes.loc[seleccion]
+        with st.form("form_editar_participante"):
+            nuevo_nombre = st.text_input("Nombre", value=fila["Nombre"])
+            nuevo_equipo = st.text_input("Equipo", value=fila["Equipo"])
+            nuevo_favorito = st.text_input("Equipo favorito", value=fila["Favorito"])
+            nuevo_estado = st.selectbox("Estado", ["Activo", "Inactivo"], index=["Activo", "Inactivo"].index(fila["Estado"]))
+            col1, col2 = st.columns(2)
+            with col1:
+                actualizar = st.form_submit_button("Actualizar")
+            with col2:
+                eliminar = st.form_submit_button("Eliminar")
+            if actualizar:
+                df_participantes.loc[seleccion] = [nuevo_nombre, nuevo_equipo, nuevo_estado, nuevo_favorito]
+                df_participantes.to_csv(PARTICIPANTES_PATH, index=False)
+                st.success("Participante actualizado.")
+            if eliminar:
+                df_participantes = df_participantes.drop(index=seleccion).reset_index(drop=True)
+                df_participantes.to_csv(PARTICIPANTES_PATH, index=False)
+                st.success("Participante eliminado.")
 
