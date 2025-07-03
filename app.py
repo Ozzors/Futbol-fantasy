@@ -18,7 +18,7 @@ PARTICIPANTES_PATH = "data/participantes.csv"
 if not os.path.exists(PUNTOS_PATH):
     pd.DataFrame(columns=["Jugador", "Jornada", "Puntos"]).to_csv(PUNTOS_PATH, index=False)
 if not os.path.exists(HISTORIAL_PATH):
-    pd.DataFrame(columns=["Temporada", "Torneo", "Ganador", "Puntos", "Posición"]).to_csv(HISTORIAL_PATH, index=False)
+    pd.DataFrame(columns=["Temporada", "Torneo", "Ganador", "Puntos", "Posicion"]).to_csv(HISTORIAL_PATH, index=False)
 if not os.path.exists(PARTICIPANTES_PATH):
     pd.DataFrame(columns=["Nombre", "Equipo", "Estado"]).to_csv(PARTICIPANTES_PATH, index=False)
 
@@ -33,13 +33,13 @@ st.title("⚽ Fantasy Fútbol - Panel de Amigos")
 
 # --- Tabs ---
 tabs = st.tabs([
-    "📥 Cargar puntos", "✏️ Editar puntos", "📊 Tabla", "📈 Evolución",
-    "🏆 Historial", "➕ Agregar campeón", "🏅 Podios", "👥 Participantes"
+    "📅 Cargar puntos", "✏️ Editar puntos", "📊 Tabla", "📈 Evolución",
+    "🏆 Historial", "➕ Agregar campeón", "🏋️ Podios", "👥 Participantes"
 ])
 
-# --- 📥 Cargar puntos ---
+# --- 📅 Cargar puntos ---
 with tabs[0]:
-    st.header("📥 Cargar Puntos de Jornada")
+    st.header("📅 Cargar Puntos de Jornada")
     with st.form("form_puntos"):
         jugador = st.selectbox("Selecciona jugador", nombres_participantes)
         jornada = st.number_input("Número de jornada", min_value=1, step=1)
@@ -98,7 +98,7 @@ with tabs[3]:
 with tabs[4]:
     st.header("🏆 Historial de Ganadores")
     if not df_historial.empty:
-        st.dataframe(df_historial.sort_values(["Temporada", "Posición"]))
+        st.dataframe(df_historial.sort_values(["Temporada", "Posicion"]))
     else:
         st.info("No hay historial aún.")
 
@@ -114,26 +114,27 @@ with tabs[5]:
                 torneo = st.text_input("Nombre del Torneo")
                 ganador = st.selectbox("Nombre del jugador", nombres_participantes)
                 puntos = st.number_input("Puntos obtenidos", step=1)
-                posicion = st.number_input("Posición final (1 = campeón)", step=1, min_value=1)
+                posicion = st.number_input("Posicion final (1 = campeón)", step=1, min_value=1)
                 guardar = st.form_submit_button("Guardar")
                 if guardar:
                     nueva_fila = pd.DataFrame([{"Temporada": temporada, "Torneo": torneo, "Ganador": ganador,
-                                                "Puntos": puntos, "Posición": posicion}])
+                                                "Puntos": puntos, "Posicion": posicion}])
                     df_historial = pd.concat([df_historial, nueva_fila], ignore_index=True)
                     df_historial.to_csv(HISTORIAL_PATH, index=False)
-                    st.success(f"Historial actualizado: {ganador} terminó en posición {posicion} en {temporada}")
+                    st.success(f"Historial actualizado: {ganador} terminó en posicion {posicion} en {temporada}")
         elif clave_ingresada:
             st.error("Clave incorrecta")
 
-# --- 🏅 Podios ---
+# --- 🏋️ Podios ---
 with tabs[6]:
-    st.header("🏅 Podios Históricos")
-    if df_historial.empty:
-        st.info("Aún no hay registros para mostrar podios.")
+    st.header("🏋️ Podios Históricos")
+    columnas_necesarias = {"Temporada", "Torneo", "Ganador", "Puntos", "Posicion"}
+    if columnas_necesarias.issubset(df_historial.columns):
+        top3 = df_historial[df_historial["Posicion"] <= 3].copy()
+        top3["Medalla"] = top3["Posicion"].map({1: "🥇", 2: "🥈", 3: "🥉"})
+        st.dataframe(top3.sort_values(by=["Temporada", "Torneo", "Posicion"]))
     else:
-        top3 = df_historial[df_historial["Posición"] <= 3].copy()
-        top3["Medalla"] = top3["Posición"].map({1: "🥇", 2: "🥈", 3: "🥉"})
-        st.dataframe(top3.sort_values(["Temporada", "Torneo", "Posición"]))
+        st.error("El archivo historial no contiene las columnas necesarias ('Temporada', 'Torneo', 'Posicion').")
 
 # --- 👥 Participantes ---
 with tabs[7]:
@@ -149,4 +150,3 @@ with tabs[7]:
             df_participantes.to_csv(PARTICIPANTES_PATH, index=False)
             st.success(f"Participante {nombre} agregado con éxito")
     st.dataframe(df_participantes.sort_values("Nombre"))
-
