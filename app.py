@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 import os
+from github import Github
+from io import BytesIO
 
 # --- Configuración inicial ---
 st.set_page_config(page_title="Fantasy Fútbol", layout="wide")
@@ -27,6 +29,75 @@ df_puntos = pd.read_csv(PUNTOS_PATH)
 df_historial = pd.read_csv(HISTORIAL_PATH)
 df_participantes = pd.read_csv(PARTICIPANTES_PATH)
 nombres_participantes = sorted(df_participantes["Nombre"].unique())
+
+# --- Funciones para GitHub ---
+
+def guardar_en_github(nombre_archivo, contenido_csv, mensaje_commit):
+    try:
+        token = st.secrets["GITHUB_TOKEN"]
+    except KeyError:
+        st.warning("No está configurado el token de GitHub en st.secrets. No se guardarán los cambios automáticamente.")
+        return False
+
+    repo_name = "Ozzors/futbol-fantasy"
+    g = Github(token)
+    repo = g.get_repo(repo_name)
+
+    try:
+        archivo = repo.get_contents(nombre_archivo)
+        repo.update_file(archivo.path, mensaje_commit, contenido_csv, archivo.sha)
+    except Exception:
+        repo.create_file(nombre_archivo, mensaje_commit, contenido_csv)
+    return True
+
+def cargar_desde_github(nombre_archivo):
+    try:
+        token = st.secrets["GITHUB_TOKEN"]
+    except KeyError:
+        st.warning("No está configurado el token de GitHub en st.secrets. No se podrá cargar desde GitHub.")
+        return None
+
+    repo_name = "Ozzors/futbol-fantasy"
+    g = Github(token)
+    repo = g.get_repo(repo_name)
+
+    try:
+        archivo = repo.get_contents(nombre_archivo)
+        contenido = archivo.decoded_content.decode()
+        return pd.read_csv(BytesIO(contenido.encode()))
+    except Exception as e:
+        st.error(f"No se pudo cargar {nombre_archivo} desde GitHub.\nError: {e}")
+        return None
+
+# --- Botones para guardar y actualizar en GitHub ---
+st.sidebar.header("Opciones de sincronización")
+
+if st.sidebar.button("💾 Guardar datos en GitHub"):
+    ok1 = guardar_en_github("data/puntos.csv", df_puntos.to_csv(index=False), "Guardado manual puntos desde app")
+    ok2 = guardar_en_github("data/historial.csv", df_historial.to_csv(index=False), "Guardado manual historial desde app")
+    ok3 = guardar_en_github("data/participantes.csv", df_participantes.to_csv(index=False), "Guardado manual participantes desde app")
+    if ok1 and ok2 and ok3:
+        st.sidebar.success("Datos guardados correctamente en GitHub.")
+    else:
+        st.sidebar.error("Error al guardar datos en GitHub.")
+
+if st.sidebar.button("🔄 Actualizar datos desde GitHub"):
+    df_puntos_github = cargar_desde_github("data/puntos.csv")
+    df_historial_github = cargar_desde_github("data/historial.csv")
+    df_participantes_github = cargar_desde_github("data/participantes.csv")
+
+    if df_puntos_github is not None:
+        df_puntos = df_puntos_github
+        df_puntos.to_csv(PUNTOS_PATH, index=False)
+    if df_historial_github is not None:
+        df_historial = df_historial_github
+        df_historial.to_csv(HISTORIAL_PATH, index=False)
+    if df_participantes_github is not None:
+        df_participantes = df_participantes_github
+        df_participantes.to_csv(PARTICIPANTES_PATH, index=False)
+
+    nombres_participantes = sorted(df_participantes["Nombre"].unique())
+    st.sidebar.success("Datos actualizados desde GitHub. Por favor recarga la página para ver los cambios.")
 
 # --- Título ---
 st.title("⚽ Fantasy Fútbol - Panel de Amigos")
@@ -194,5 +265,3 @@ with tabs[8]:
                 df_participantes = df_participantes.drop(index=seleccion).reset_index(drop=True)
                 df_participantes.to_csv(PARTICIPANTES_PATH, index=False)
                 st.success("Participante eliminado.")
-
-
